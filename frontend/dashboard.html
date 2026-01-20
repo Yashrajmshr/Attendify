@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attendify Dashboard</title>
+</head>
+<body>
+  <h2>Create Attendance Session</h2>
+
+  <input id="subject" placeholder="Subject"><br><br>
+  <input id="section" placeholder="Section"><br><br>
+  <input id="radius" placeholder="Radius (meters)" value="50"><br><br>
+  <input id="time" placeholder="Time limit (minutes)" value="5"><br><br>
+
+  <button onclick="createSession()">Create Session</button>
+
+  <h3 id="status"></h3>
+  <img id="qr" width="300"/>
+
+<script>
+function createSession(){
+  navigator.geolocation.getCurrentPosition(pos => {
+
+    fetch("http://127.0.0.1:5000/api/session/create", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        faculty_id: localStorage.getItem("faculty_id"),
+        subject: document.getElementById("subject").value,
+        section: document.getElementById("section").value,
+        radius: document.getElementById("radius").value,
+        time_limit: document.getElementById("time").value,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success){
+        document.getElementById("status").innerText = "Session Created! Scan QR:";
+        document.getElementById("qr").src = "http://127.0.0.1:5000/" + data.qr_image;
+      }
+    });
+
+  });
+}
+</script>
+</body>
+</html>
