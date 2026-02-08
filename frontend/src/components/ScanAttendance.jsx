@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useState, useEffect, useRef } from 'react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../api/axios';
-import { MapPin } from 'lucide-react';
+import { MapPin, Camera, RefreshCw } from 'lucide-react';
 
 const ScanAttendance = () => {
     const [scanResult, setScanResult] = useState(null);
@@ -9,42 +9,76 @@ const ScanAttendance = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+
+    // Ref for the scanner instance
+    const scannerRef = useRef(null);
 
     useEffect(() => {
-        // Initialize scanner only if not already scanned
-        if (!scanResult) {
-            const scanner = new Html5QrcodeScanner(
-                "reader",
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                /* verbose= */ false
-            );
+        // Cleanup on unmount
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
+            }
+        };
+    }, []);
 
-            scanner.render(onScanSuccess, onScanFailure);
+    const startScanning = async () => {
+        setError('');
+        setMessage('');
+        setIsScanning(true);
 
-            function onScanSuccess(decodedText, decodedResult) {
-                // Handle the scanned code as you like, for example:
-                console.log(`Code matched = ${decodedText}`, decodedResult);
-                try {
-                    const parsed = JSON.parse(decodedText);
-                    setScanResult(parsed);
-                    scanner.clear();
-                } catch (e) {
-                    console.error("Invalid QR format");
+        try {
+            const formatsToSupport = [
+                Html5QrcodeSupportedFormats.QR_CODE,
+            ];
+
+            const html5QrCode = new Html5Qrcode("reader", { formatsToSupport });
+            scannerRef.current = html5QrCode;
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            // Prefer back camera
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    // Success callback
+                    handleScanSuccess(decodedText);
+                },
+                (errorMessage) => {
+                    // Error callback (ignore frequent scanning errors)
                 }
-            }
-
-            function onScanFailure(error) {
-                // handle scan failure, usually better to ignore and keep scanning.
-                // console.warn(`Code scan error = ${error}`);
-            }
-
-            return () => {
-                scanner.clear().catch(error => {
-                    console.error("Failed to clear html5-qrcode scanner. ", error);
-                });
-            };
+            );
+        } catch (err) {
+            console.error(err);
+            setIsScanning(false);
+            setError("Camera start failed. Ensure you are on HTTPS (or localhost) and have given camera permission.");
         }
-    }, [scanResult]);
+    };
+
+    const stopScanning = async () => {
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.stop();
+                scannerRef.current.clear();
+                setIsScanning(false);
+            } catch (err) {
+                console.error("Failed to stop scanner", err);
+            }
+        }
+    };
+
+    const handleScanSuccess = (decodedText) => {
+        try {
+            const parsed = JSON.parse(decodedText);
+            setScanResult(parsed);
+            stopScanning(); // Stop camera after success
+        } catch (e) {
+            console.error("Invalid QR format");
+            setError("Invalid QR Code detected.");
+        }
+    };
 
     const getLocation = () => {
         setLoading(true);
@@ -79,7 +113,7 @@ const ScanAttendance = () => {
                 lat: location.lat,
                 lng: location.lng
             });
-            setMessage('Attendance Marked Successfully!');
+            setMessage('Attendance Marked Successfully! 🎉');
             setError('');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to mark attendance');
@@ -89,55 +123,116 @@ const ScanAttendance = () => {
         }
     };
 
+    const resetScan = () => {
+        setScanResult(null);
+        setLocation(null);
+        setMessage('');
+        setError('');
+        setIsScanning(false);
+    };
+
     return (
-        <div className="flex flex-col items-center">
-            <h2 className="text-xl font-bold mb-4">Scan QR to Mark Attendance</h2>
+        <div className="flex flex-col items-center w-full max-w-md mx-auto">
+            <h2 className="text-xl font-bold mb-6 text-slate-800">Mark Attendance</h2>
 
-            {message && <div className="bg-green-100 text-green-700 p-4 rounded mb-4 w-full text-center">{message}</div>}
-            {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4 w-full text-center">{error}</div>}
-
-            {!scanResult && (
-                <div id="reader" className="w-full max-w-md"></div>
+            {message && (
+                <div className="bg-green-100 border border-green-200 text-green-700 p-4 rounded-xl mb-6 w-full text-center flex items-center justify-center shadow-sm">
+                    <span className="font-medium">{message}</span>
+                </div>
             )}
 
-            {scanResult && !message && (
-                <div className="w-full max-w-md bg-gray-50 p-4 rounded-lg shadow space-y-4">
-                    <div className="p-2 border-b">
-                        <p><strong>Subject:</strong> {scanResult.subject}</p>
-                        <p><strong>Allowed Radius:</strong> {scanResult.radius}m</p>
-                    </div>
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 w-full text-center shadow-sm">
+                    <span className="text-sm font-medium">{error}</span>
+                </div>
+            )}
 
-                    {!location ? (
-                        <div className="text-center">
-                            <p className="mb-2 text-sm text-gray-600">Location is required to verify your presence.</p>
+            {!scanResult ? (
+                <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    {!isScanning ? (
+                        <div className="text-center py-8">
+                            <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Camera size={32} className="text-indigo-600" />
+                            </div>
+                            <p className="text-slate-600 mb-6">Scan the Faculty's QR Code to mark your presence.</p>
                             <button
-                                onClick={getLocation}
-                                disabled={loading}
-                                className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full"
+                                onClick={startScanning}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center mx-auto"
                             >
-                                <MapPin size={18} className="mr-2" />
-                                {loading ? 'Getting Location...' : 'Get My Location'}
+                                <Camera size={20} className="mr-2" />
+                                Open Camera
                             </button>
                         </div>
                     ) : (
-                        <div className="text-center">
-                            <p className="mb-2 text-sm text-green-600 flex justify-center items-center"><MapPin size={16} /> Location Acquired</p>
+                        <div className="relative overflow-hidden rounded-xl bg-black">
+                            <div id="reader" className="w-full"></div>
+                            <button
+                                onClick={stopScanning}
+                                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm"
+                            >
+                                Stop Camera
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="w-full bg-white p-6 rounded-2xl shadow-lg border border-indigo-100 space-y-6">
+                    <div className="text-center border-b border-slate-100 pb-4">
+                        <h3 className="text-lg font-bold text-slate-800">{scanResult.subject}</h3>
+                        <div className="flex justify-center items-center mt-2 space-x-2">
+                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full font-medium">Radius: {scanResult.radius}m</span>
+                            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full font-medium">QR Verified</span>
+                        </div>
+                    </div>
+
+                    {!location ? (
+                        <div className="text-center py-2">
+                            <p className="mb-4 text-sm text-slate-500">We need your location to verify you are in class.</p>
+                            <button
+                                onClick={getLocation}
+                                disabled={loading}
+                                className="w-full flex items-center justify-center py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium shadow-md"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center"><RefreshCw className="animate-spin mr-2" size={18} /> Locating...</span>
+                                ) : (
+                                    <span className="flex items-center"><MapPin size={18} className="mr-2" /> Get My Location</span>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-center space-y-4">
+                            <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg flex items-center justify-center text-emerald-700">
+                                <MapPin size={18} className="mr-2" />
+                                <span className="text-sm font-medium">Location Acquired</span>
+                            </div>
                             <button
                                 onClick={markAttendance}
                                 disabled={loading}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full font-bold"
+                                className="w-full py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-bold shadow-md text-lg"
                             >
-                                {loading ? 'Marking...' : 'Submit Attendance'}
+                                {loading ? 'Submitting...' : 'Mark Present ✅'}
                             </button>
                         </div>
                     )}
 
-                    <button
-                        onClick={() => { setScanResult(null); setLocation(null); setMessage(''); setError(''); }}
-                        className="text-sm text-gray-500 underline mt-2 w-full text-center"
-                    >
-                        Cancel / Scan Again
-                    </button>
+                    {!message && (
+                        <button
+                            onClick={resetScan}
+                            className="w-full py-2 text-slate-400 hover:text-slate-600 text-sm font-medium"
+                        >
+                            Cancel
+                        </button>
+                    )}
+
+                    {message && (
+                        <button
+                            onClick={resetScan}
+                            className="w-full py-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        >
+                            Scan Another
+                        </button>
+                    )}
                 </div>
             )}
         </div>
