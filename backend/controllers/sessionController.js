@@ -66,4 +66,26 @@ const getSessionById = async (req, res) => {
     }
 };
 
-module.exports = { createSession, getSessions, getSessionById };
+// @desc    End/Deactivate a session
+// @route   PUT /api/session/:id/end
+// @access  Private/Faculty
+const endSession = async (req, res) => {
+    const session = await Session.findByPk(req.params.id);
+
+    if (session) {
+        if (session.facultyId !== req.user.id) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        session.isActive = false;
+        await session.save();
+
+        const json = session.toJSON();
+        json._id = session.id;
+        res.json(json);
+    } else {
+        res.status(404).json({ message: 'Session not found' });
+    }
+};
+
+module.exports = { createSession, getSessions, getSessionById, endSession };
