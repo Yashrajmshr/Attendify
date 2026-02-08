@@ -29,31 +29,28 @@ const ScanAttendance = () => {
         setIsScanning(true);
 
         try {
-            const formatsToSupport = [
-                Html5QrcodeSupportedFormats.QR_CODE,
-            ];
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length) {
+                const cameraId = devices[0].id; // Use first available camera if facingMode fails
 
-            const html5QrCode = new Html5Qrcode("reader", { formatsToSupport });
-            scannerRef.current = html5QrCode;
+                const html5QrCode = new Html5Qrcode("reader");
+                scannerRef.current = html5QrCode;
 
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            // Prefer back camera
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText) => {
-                    // Success callback
-                    handleScanSuccess(decodedText);
-                },
-                (errorMessage) => {
-                    // Error callback (ignore frequent scanning errors)
-                }
-            );
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText) => handleScanSuccess(decodedText),
+                    (errorMessage) => { /* ignore */ }
+                );
+            } else {
+                setError("No cameras found on this device.");
+                setIsScanning(false);
+            }
         } catch (err) {
-            console.error(err);
+            console.error("Camera Error:", err);
             setIsScanning(false);
-            setError("Camera start failed. Ensure you are on HTTPS (or localhost) and have given camera permission.");
+            // Show exact error to user for debugging
+            setError(`Camera Error: ${err?.message || err}`);
         }
     };
 
@@ -133,7 +130,8 @@ const ScanAttendance = () => {
 
     return (
         <div className="flex flex-col items-center w-full max-w-md mx-auto">
-            <h2 className="text-xl font-bold mb-6 text-slate-800">Mark Attendance</h2>
+            <h2 className="text-xl font-bold mb-2 text-slate-800">Mark Attendance</h2>
+            <p className="text-xs text-slate-400 mb-6">v1.2 (Debug Mode)</p>
 
             {message && (
                 <div className="bg-green-100 border border-green-200 text-green-700 p-4 rounded-xl mb-6 w-full text-center flex items-center justify-center shadow-sm">
