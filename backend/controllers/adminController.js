@@ -55,4 +55,60 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-module.exports = { createUser, getAllUsers };
+// @desc    Update user details
+// @route   PUT /api/admin/update-user/:id
+// @access  Private/Admin
+const updateUser = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const { name, email, role, rollNumber, department, section, password } = req.body;
+
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.role = role || user.role;
+        user.rollNumber = rollNumber || user.rollNumber;
+        user.department = department || user.department;
+        user.section = section || user.section;
+
+        if (password) {
+            user.password = password;
+        }
+
+        await user.save();
+
+        res.json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            message: 'User updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Delete user
+// @route   DELETE /api/admin/delete-user/:id
+// @access  Private/Admin
+const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        await user.destroy();
+        res.json({ message: 'User removed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = { createUser, getAllUsers, updateUser, deleteUser };
