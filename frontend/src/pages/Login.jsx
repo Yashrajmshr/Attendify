@@ -13,7 +13,13 @@ const Login = () => {
         e.preventDefault();
         const result = await login(email, password);
         if (result.success) {
-            navigate('/dashboard');
+            if (result.user.role === 'admin') {
+                navigate('/admin');
+            } else if (result.user.role === 'faculty') {
+                navigate('/faculty-dashboard');
+            } else {
+                navigate('/student-dashboard');
+            }
         } else {
             setError(result.message);
         }
@@ -64,14 +70,7 @@ const Login = () => {
                         Sign In
                     </button>
 
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
-                            <Link to="/signup" className="text-primary font-semibold hover:text-indigo-700 hover:underline transition-colors">
-                                Create Account
-                            </Link>
-                        </p>
-                    </div>
+                    {/* Signup link removed as per request */}
                 </form>
             </div>
         </div>

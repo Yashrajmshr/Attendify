@@ -24,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/student', require('./routes/studentRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

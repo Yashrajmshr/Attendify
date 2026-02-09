@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
             const { data } = await api.post('/auth/login', { email, password });
             localStorage.setItem('user', JSON.stringify(data));
             setUser(data);
-            return { success: true };
+            return { success: true, user: data };
         } catch (error) {
             return {
                 success: false,
