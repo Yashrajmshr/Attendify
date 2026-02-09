@@ -19,6 +19,21 @@ const markAttendance = async (req, res) => {
         return res.status(400).json({ message: 'Session is no longer active' });
     }
 
+    // Validate QR Code Expiration (Dynamic QR)
+    const { qrGeneratedAt } = req.body;
+    if (qrGeneratedAt) {
+        const timeDifference = Date.now() - qrGeneratedAt;
+        const ALLOWED_DELAY = 15000; // 15 seconds validity
+
+        if (timeDifference > ALLOWED_DELAY) {
+            return res.status(400).json({ message: 'QR Code expired! Please scan a new one.' });
+        }
+
+        if (timeDifference < -5000) { // Allow 5 seconds clock skew
+            return res.status(400).json({ message: 'Invalid device time. Please sync your clock.' });
+        }
+    }
+
     // Calculate distance
     const distance = getDistanceFromLatLonInMeters(
         session.lat,

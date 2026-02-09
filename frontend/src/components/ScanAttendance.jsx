@@ -108,7 +108,8 @@ const ScanAttendance = () => {
             const { data } = await api.post('/attendance', {
                 sessionId: scanResult.sessionId,
                 lat: location.lat,
-                lng: location.lng
+                lng: location.lng,
+                qrGeneratedAt: scanResult.timestamp // Send timestamp from QR
             });
             setMessage('Attendance Marked Successfully! 🎉');
             setError('');
