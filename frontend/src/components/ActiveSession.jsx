@@ -2,6 +2,32 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import QRCode from 'react-qr-code';
 
+const SessionQRCode = ({ session }) => {
+    const [qrData, setQrData] = useState(JSON.stringify({
+        sessionId: session._id,
+        subject: session.subject,
+        radius: session.radius,
+        timestamp: Date.now()
+    }));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setQrData(JSON.stringify({
+                sessionId: session._id,
+                subject: session.subject,
+                radius: session.radius,
+                timestamp: Date.now()
+            }));
+        }, 9000);
+
+        return () => clearInterval(interval);
+    }, [session]);
+
+    return (
+        <QRCode value={qrData} size={120} />
+    );
+};
+
 const ActiveSession = () => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -69,11 +95,7 @@ const ActiveSession = () => {
                                 {session.isActive ? (
                                     <>
                                         <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                                            <QRCode value={JSON.stringify({
-                                                sessionId: session._id,
-                                                subject: session.subject,
-                                                radius: session.radius
-                                            })} size={120} />
+                                            <SessionQRCode session={session} />
                                         </div>
                                         <p className="text-xs text-slate-500 mt-2 mb-3">Scan to mark attendance</p>
                                         <button
@@ -99,3 +121,4 @@ const ActiveSession = () => {
 };
 
 export default ActiveSession;
+
