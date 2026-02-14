@@ -1,4 +1,4 @@
-const Session = require('../models/Session');
+const { db } = require('../config/firebase');
 
 // @desc    Create a new attendance session
 // @route   POST /api/session
@@ -11,20 +11,20 @@ const createSession = async (req, res) => {
     }
 
     try {
-        const session = await Session.create({
+        const sessionData = {
             facultyId: req.user.id,
             subject,
             section,
             lat,
             lng,
-            radius
-        });
+            radius,
+            isActive: true,
+            createdAt: new Date().toISOString()
+        };
 
-        // Map to frontend expected format if needed, or update frontend. 
-        // For now, let's keep response similar but id is `id` not `_id`. 
-        // We will inject `_id` alias in response to minimize frontend breakage.
-        const responseSession = session.toJSON();
-        responseSession._id = session.id;
+        const sessionRef = await db.collection('sessions').add(sessionData);
+
+        const responseSession = { ...sessionData, _id: sessionRef.id };
 
         res.status(201).json(responseSession);
     } catch (error) {
@@ -36,33 +36,39 @@ const createSession = async (req, res) => {
 // @route   GET /api/session
 // @access  Private/Faculty
 const getSessions = async (req, res) => {
-    const sessions = await Session.findAll({
-        where: { facultyId: req.user.id },
-        order: [['createdAt', 'DESC']]
-    });
+    try {
+        const sessionsRef = db.collection('sessions');
+        const snapshot = await sessionsRef.where('facultyId', '==', req.user.id).get();
 
-    // Map for frontend compatibility
-    const responseSessions = sessions.map(s => {
-        const json = s.toJSON();
-        json._id = s.id;
-        return json;
-    });
+        const sessions = [];
+        snapshot.forEach(doc => {
+            sessions.push({ ...doc.data(), _id: doc.id });
+        });
 
-    res.json(responseSessions);
+        // Client side sorting might be needed or composite index for orderBy
+        // sessions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 };
 
 // @desc    Get session by ID
 // @route   GET /api/session/:id
 // @access  Private
 const getSessionById = async (req, res) => {
-    const session = await Session.findByPk(req.params.id);
+    try {
+        const sessionRef = db.collection('sessions').doc(req.params.id);
+        const doc = await sessionRef.get();
 
-    if (session) {
-        const json = session.toJSON();
-        json._id = session.id;
-        res.json(json);
-    } else {
-        res.status(404).json({ message: 'Session not found' });
+        if (doc.exists) {
+            res.json({ ...doc.data(), _id: doc.id });
+        } else {
+            res.status(404).json({ message: 'Session not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
@@ -70,21 +76,25 @@ const getSessionById = async (req, res) => {
 // @route   PUT /api/session/:id/end
 // @access  Private/Faculty
 const endSession = async (req, res) => {
-    const session = await Session.findByPk(req.params.id);
+    try {
+        const sessionRef = db.collection('sessions').doc(req.params.id);
+        const doc = await sessionRef.get();
 
-    if (session) {
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        const session = doc.data();
+
         if (session.facultyId !== req.user.id) {
             return res.status(401).json({ message: 'Not authorized' });
         }
 
-        session.isActive = false;
-        await session.save();
+        await sessionRef.update({ isActive: false });
 
-        const json = session.toJSON();
-        json._id = session.id;
-        res.json(json);
-    } else {
-        res.status(404).json({ message: 'Session not found' });
+        res.json({ ...session, isActive: false, _id: doc.id });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 

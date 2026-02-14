@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { db } = require('../config/firebase');
 const bcrypt = require('bcryptjs');
 
 // @desc    Create a new user (Faculty/Student)
@@ -12,28 +12,35 @@ const createUser = async (req, res) => {
         return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // Check if user exists
-    const userExists = await User.findOne({ where: { email } });
-    if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
-
     try {
-        const user = await User.create({
+        const userRef = db.collection('users');
+        const snapshot = await userRef.where('email', '==', email).get();
+
+        if (!snapshot.empty) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = {
             name,
             email,
-            password,
+            password: hashedPassword,
             role,
-            rollNumber,
+            rollNumber: rollNumber || null,
             department,
-            section
-        });
+            section: section || null,
+            createdAt: new Date().toISOString()
+        };
+
+        const docRef = await userRef.add(newUser);
 
         res.status(201).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
+            id: docRef.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role,
             message: `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully`
         });
     } catch (error) {
@@ -46,12 +53,19 @@ const createUser = async (req, res) => {
 // @access  Private/Admin
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.findAll({
-            attributes: { exclude: ['password'] }
+        const userRef = db.collection('users');
+        const snapshot = await userRef.get();
+
+        const users = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            delete data.password;
+            users.push({ ...data, id: doc.id });
         });
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -60,35 +74,39 @@ const getAllUsers = async (req, res) => {
 // @access  Private/Admin
 const updateUser = async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.id);
+        const userRef = db.collection('users').doc(req.params.id);
+        const doc = await userRef.get();
 
-        if (!user) {
+        if (!doc.exists) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        const userData = doc.data();
         const { name, email, role, rollNumber, department, section, password } = req.body;
 
-        user.name = name || user.name;
-        user.email = email || user.email;
-        user.role = role || user.role;
-        user.rollNumber = rollNumber || user.rollNumber;
-        user.department = department || user.department;
-        user.section = section || user.section;
+        const updatedData = {
+            name: name || userData.name,
+            email: email || userData.email,
+            role: role || userData.role,
+            rollNumber: rollNumber || userData.rollNumber,
+            department: department || userData.department,
+            section: section || userData.section
+        };
 
         if (password) {
-            user.password = password;
+            const salt = await bcrypt.genSalt(10);
+            updatedData.password = await bcrypt.hash(password, salt);
         }
 
-        await user.save();
+        await userRef.update(updatedData);
 
         res.json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
+            id: doc.id,
+            ...updatedData,
             message: 'User updated successfully'
         });
     } catch (error) {
+        console.error('Error updating user:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
@@ -98,15 +116,18 @@ const updateUser = async (req, res) => {
 // @access  Private/Admin
 const deleteUser = async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.id);
+        console.log('Deleting user:', req.params.id);
+        const userRef = db.collection('users').doc(req.params.id);
+        const doc = await userRef.get();
 
-        if (!user) {
+        if (!doc.exists) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        await user.destroy();
+        await userRef.delete();
         res.json({ message: 'User removed' });
     } catch (error) {
+        console.error('Error deleting user:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };

@@ -1,0 +1,4 @@
+Total Users: 3
+[7G61503j9WgF8FNT4TyT] student - Test student (test_student@gmail.com)
+[GuaNpb5YEE0MMI01vQth] admin - test_admin (admin@gmail.com)
+[tARjtaGP5OuFlm72e5BP] faculty - test faculty (test_faculty@gmail.com)

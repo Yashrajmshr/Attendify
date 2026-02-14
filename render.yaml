@@ -10,27 +10,7 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: attendify-db
-          property: connectionString
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: true # This will need to be pasted into Render dashboard
 
-  - type: web
-    name: attendify-frontend
-    env: static
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: attendify-backend
-          property: url
-          value: /api
 
-databases:
-  - name: attendify-db
-    plan: free
-    databaseName: attendify
-    user: attendify

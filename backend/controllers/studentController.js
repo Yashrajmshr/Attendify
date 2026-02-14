@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { db } = require('../config/firebase');
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -10,27 +10,34 @@ const addStudent = async (req, res) => {
     const { name, email, password, rollNumber, department, section } = req.body;
 
     try {
-        const userExists = await User.findOne({ where: { email } });
+        const userRef = db.collection('users');
+        const snapshot = await userRef.where('email', '==', email).get();
 
-        if (userExists) {
+        if (!snapshot.empty) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const user = await User.create({
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = {
             name,
             email,
-            password,
+            password: hashedPassword,
             role: 'student',
             rollNumber,
             department,
-            section
-        });
+            section,
+            createdAt: new Date().toISOString()
+        };
+
+        const docRef = await userRef.add(newUser);
 
         res.status(201).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role
+            _id: docRef.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role
         });
     } catch (error) {
         res.status(400).json({ message: 'Invalid user data', error: error.message });
@@ -76,15 +83,17 @@ const uploadStudents = async (req, res) => {
             }
         });
 
-        // Filter duplicates from DB check is complex in bulk. 
-        // Sequelize bulkCreate with updateOnDuplicate or ignoreDuplicates is an option.
-        // For simplicity with bcrypt, we'll loop check-create.
-
         let count = 0;
+        const userRef = db.collection('users');
+        const salt = await bcrypt.genSalt(10);
+
+        // This is slow for large datasets but safer. Batched writes can be used for up to 500 items.
         for (const student of studentsToCreate) {
-            const exists = await User.findOne({ where: { email: student.email } });
-            if (!exists) {
-                await User.create(student); // Password hook will hash it
+            const snapshot = await userRef.where('email', '==', student.email).get();
+            if (snapshot.empty) {
+                student.password = await bcrypt.hash(student.password, salt);
+                student.createdAt = new Date().toISOString();
+                await userRef.add(student);
                 count++;
             }
         }
@@ -104,18 +113,21 @@ const uploadStudents = async (req, res) => {
 // @route   GET /api/student
 // @access  Private/Faculty
 const getStudents = async (req, res) => {
-    const students = await User.findAll({
-        where: { role: 'student' },
-        attributes: { exclude: ['password'] }
-    });
+    try {
+        const userRef = db.collection('users');
+        const snapshot = await userRef.where('role', '==', 'student').get();
 
-    const response = students.map(s => {
-        const json = s.toJSON();
-        json._id = s.id;
-        return json;
-    });
+        const students = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            delete data.password;
+            students.push({ ...data, _id: doc.id });
+        });
 
-    res.json(response);
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 };
 
 module.exports = { addStudent, uploadStudents, getStudents };

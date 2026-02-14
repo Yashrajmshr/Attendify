@@ -1,11 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const cors = require('cors');
-const { connectDB } = require('./config/db');
-
 dotenv.config();
+const cors = require('cors');
+const { db } = require('./config/firebase');
 
-connectDB();
+// db is already initialized in config/firebase.js
+// connectDB(); // Removed SQL connection
 
 const authRoutes = require('./routes/authRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
@@ -27,5 +27,7 @@ app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, console.log(`Server running on port ${PORT}`));
+
+// const functions = require('firebase-functions');
+// exports.api = functions.https.onRequest(app);

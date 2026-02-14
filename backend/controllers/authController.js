@@ -1,5 +1,6 @@
-const User = require('../models/User');
+const { db } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -14,31 +15,37 @@ const registerUser = async (req, res) => {
     const { name, email, password, role, rollNumber, department, section } = req.body;
 
     try {
-        const userExists = await User.findOne({ where: { email } });
+        const userRef = db.collection('users');
+        const snapshot = await userRef.where('email', '==', email).get();
 
-        if (userExists) {
+        if (!snapshot.empty) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const user = await User.create({
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = {
             name,
             email,
-            password,
-            role,
-            rollNumber,
+            password: hashedPassword,
+            role: role || 'student',
+            rollNumber: rollNumber || null,
             department,
-            section
+            section: section || null,
+            createdAt: new Date().toISOString()
+        };
+
+        const docRef = await userRef.add(newUser);
+
+        res.status(201).json({
+            _id: docRef.id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role,
+            token: generateToken(docRef.id),
         });
 
-        if (user) {
-            res.status(201).json({
-                _id: user.id, // Frontend expects _id
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user.id),
-            });
-        }
     } catch (error) {
         res.status(400).json({ message: 'Invalid user data', error: error.message });
     }
@@ -50,19 +57,36 @@ const registerUser = async (req, res) => {
 const authUser = async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    try {
+        const userRef = db.collection('users');
+        const snapshot = await userRef.where('email', '==', email).get();
 
-    if (user && (await user.matchPassword(password))) {
-        res.json({
-            _id: user.id, // Frontend expects _id
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            department: user.department,
-            token: generateToken(user.id),
+        if (snapshot.empty) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        let user = null;
+        let userId = null;
+
+        snapshot.forEach(doc => {
+            user = doc.data();
+            userId = doc.id;
         });
-    } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+
+        if (user && (await bcrypt.compare(password, user.password))) {
+            res.json({
+                _id: userId,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                department: user.department,
+                token: generateToken(userId),
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid email or password' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
