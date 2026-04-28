@@ -42,11 +42,7 @@ const SubjectManagement = () => {
     const [filterSem, setFilterSem] = useState('');
     const [availablePrograms, setAvailablePrograms] = useState([]);
 
-    useEffect(() => {
-        fetchSubjects();
-        fetchDepartments();
-        fetchFaculty();
-    }, []);
+
 
     useEffect(() => {
         if (formData.department) {
@@ -208,6 +204,13 @@ const SubjectManagement = () => {
         }
     }
 
+    useEffect(() => {
+        fetchSubjects();
+        fetchDepartments();
+        fetchFaculty();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleEdit = (subject) => {
         setFormData({
             name: subject.name,
@@ -235,7 +238,7 @@ const SubjectManagement = () => {
                 await api.delete(`/subjects/${id}`);
                 setSubjects(subjects.filter(sub => sub.id !== id));
                 setMessage('Subject deleted successfully');
-            } catch (err) {
+            } catch (error) {
                 setError('Failed to delete subject');
             }
         }
