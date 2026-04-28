@@ -1,0 +1,37 @@
+commit 4c663cc6b81f8ef8933034d28ca93128112dc6ca
+Author: Yashrajmshr <yashrajmshr005@gmail.com>
+Date:   Tue Mar 3 17:30:46 2026 +0530
+
+    Bhai saari files push kar di (Secrets removed from commit history)
+
+.gitignore
+backend/config/attendify-1d0ca-firebase-adminsdk-fbsvc-1e4acd84ac.json
+backend/controllers/adminController.js
+backend/controllers/attendanceController.js
+backend/controllers/sessionController.js
+backend/controllers/studentController.js
+backend/controllers/subjectController.js
+backend/routes/studentRoutes.js
+backend/server.js
+backend/test_subjects_sections.js
+frontend/package-lock.json
+frontend/package.json
+frontend/src/App.jsx
+frontend/src/components/AdminAttendanceDashboard.jsx
+frontend/src/components/AttendanceReport.jsx
+frontend/src/components/CreateSession.jsx
+frontend/src/components/FacultyAttendanceDashboard.jsx
+frontend/src/components/ScanAttendance.jsx
+frontend/src/components/StudentManagement.jsx
+frontend/src/components/SubjectManagement.jsx
+frontend/src/components/ThemeToggle.jsx
+frontend/src/index.css
+frontend/src/pages/AdminDashboard.jsx
+frontend/src/pages/FacultyDashboard.jsx
+frontend/src/pages/Login.jsx
+frontend/src/pages/Signup.jsx
+frontend/src/pages/StudentDashboard.jsx
+frontend/src/utils/deviceInfo.js
+frontend/tailwind.config.js
+package-lock.json
+package.json

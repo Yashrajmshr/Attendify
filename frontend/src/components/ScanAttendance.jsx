@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import api from '../api/axios';
 import { MapPin, Camera, RefreshCw } from 'lucide-react';
+import { getDeviceId } from '../utils/deviceInfo';
 
 const ScanAttendance = () => {
     const [scanResult, setScanResult] = useState(null);
@@ -109,7 +110,8 @@ const ScanAttendance = () => {
                 sessionId: scanResult.sessionId,
                 lat: location.lat,
                 lng: location.lng,
-                qrGeneratedAt: scanResult.timestamp // Send timestamp from QR
+                qrGeneratedAt: scanResult.timestamp, // Send timestamp from QR
+                deviceId: getDeviceId()
             });
             setMessage('Attendance Marked Successfully! 🎉');
             setError('');
@@ -131,7 +133,7 @@ const ScanAttendance = () => {
 
     return (
         <div className="flex flex-col items-center w-full max-w-md mx-auto">
-            <h2 className="text-xl font-bold mb-2 text-slate-800">Mark Attendance</h2>
+            <h2 className="text-xl font-bold mb-2 text-slate-800 dark:text-white">Mark Attendance</h2>
             <p className="text-xs text-slate-400 mb-6">v1.2 (Debug Mode)</p>
 
             {message && (
@@ -147,13 +149,13 @@ const ScanAttendance = () => {
             )}
 
             {!scanResult ? (
-                <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                     {!isScanning ? (
                         <div className="text-center py-8">
                             <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Camera size={32} className="text-indigo-600" />
                             </div>
-                            <p className="text-slate-600 mb-6">Scan the Faculty's QR Code to mark your presence.</p>
+                            <p className="text-slate-600 dark:text-slate-400 mb-6">Scan the Faculty's QR Code to mark your presence.</p>
                             <button
                                 onClick={startScanning}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center mx-auto"
@@ -175,9 +177,9 @@ const ScanAttendance = () => {
                     )}
                 </div>
             ) : (
-                <div className="w-full bg-white p-6 rounded-2xl shadow-lg border border-indigo-100 space-y-6">
+                <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-lg border border-indigo-100 dark:border-indigo-500/20 space-y-6">
                     <div className="text-center border-b border-slate-100 pb-4">
-                        <h3 className="text-lg font-bold text-slate-800">{scanResult.subject}</h3>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">{scanResult.subject}</h3>
                         <div className="flex justify-center items-center mt-2 space-x-2">
                             <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full font-medium">Radius: {scanResult.radius}m</span>
                             <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full font-medium">QR Verified</span>
@@ -186,7 +188,7 @@ const ScanAttendance = () => {
 
                     {!location ? (
                         <div className="text-center py-2">
-                            <p className="mb-4 text-sm text-slate-500">We need your location to verify you are in class.</p>
+                            <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">We need your location to verify you are in class.</p>
                             <button
                                 onClick={getLocation}
                                 disabled={loading}

@@ -22,7 +22,19 @@ const AdminRoute = ({ children }) => {
   return user && user.role === 'admin' ? children : <Navigate to="/login" />;
 };
 
+import { useEffect } from 'react';
+
 function App() {
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const root = window.document.documentElement;
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

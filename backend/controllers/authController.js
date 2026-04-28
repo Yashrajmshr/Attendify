@@ -1,6 +1,7 @@
 const { db } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { logActivity } = require('../utils/logger');
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -38,6 +39,9 @@ const registerUser = async (req, res) => {
 
         const docRef = await userRef.add(newUser);
 
+        // Limit sensitive info in logs
+        await logActivity(docRef.id, newUser.role, 'REGISTER', { email: newUser.email }, req.ip);
+
         res.status(201).json({
             _id: docRef.id,
             name: newUser.name,
@@ -62,6 +66,7 @@ const authUser = async (req, res) => {
         const snapshot = await userRef.where('email', '==', email).get();
 
         if (snapshot.empty) {
+            await logActivity('unknown', 'unknown', 'LOGIN_FAILED', { email, reason: 'User not found' }, req.ip, 'FAILURE');
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
@@ -74,15 +79,26 @@ const authUser = async (req, res) => {
         });
 
         if (user && (await bcrypt.compare(password, user.password))) {
-            res.json({
+            await logActivity(userId, user.role, 'LOGIN', { email: user.email }, req.ip);
+
+            const response = {
                 _id: userId,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 department: user.department,
                 token: generateToken(userId),
-            });
+            };
+
+            // Add admin-specific fields
+            if (user.role === 'admin') {
+                response.adminType = user.adminType || 'super'; // Default to super for backward compatibility
+                response.assignedDepartment = user.assignedDepartment || null;
+            }
+
+            res.json(response);
         } else {
+            await logActivity(userId, user.role, 'LOGIN_FAILED', { email, reason: 'Incorrect password' }, req.ip, 'FAILURE');
             res.status(401).json({ message: 'Invalid email or password' });
         }
     } catch (error) {

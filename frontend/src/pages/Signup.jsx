@@ -31,121 +31,141 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/50 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary"></div>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark p-4 relative overflow-hidden">
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary-500/5 rounded-full blur-[120px] -ml-64 -mt-64 animate-pulse"></div>
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -mr-64 -mb-64 animate-pulse" style={{ animationDelay: '1.5s' }}></div>
 
-                <div>
-                    <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+            <div className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl p-10 rounded-[2.5rem] shadow-premium-card w-full max-w-lg border border-white/40 dark:border-white/5 relative z-10 animate-fade-in my-12">
+                <div className="text-center mb-10">
+                    <h2 className="text-4xl font-display font-black tracking-tight text-slate-900 dark:text-white mb-2">
                         Create Account
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
+                    <p className="text-slate-500 dark:text-slate-400 font-medium tracking-wide">
                         Join your institution's digital campus
                     </p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg text-sm">
-                        <span className="font-bold">Error:</span> {error}
+                    <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl mb-8 flex items-center text-sm font-semibold animate-fade-in">
+                        <span className="font-bold mr-2">Error:</span> {error}
                     </div>
                 )}
 
-                <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 text-sm font-semibold mb-2 ml-1">I am a...</label>
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                    <div className="space-y-4">
+                        <div className="mb-6">
+                            <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1 mb-3">Identity Type</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'student' })}
-                                    className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${formData.role === 'student' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-2 ring-indigo-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    className={`py-3 px-4 rounded-2xl border text-sm font-bold tracking-tight transition-all duration-300 ${formData.role === 'student' ? 'bg-primary-500 border-primary-500 text-white shadow-active-primary' : 'bg-white dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50'}`}
                                 >
                                     Student
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'faculty' })}
-                                    className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${formData.role === 'faculty' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-2 ring-indigo-200' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    className={`py-3 px-4 rounded-2xl border text-sm font-bold tracking-tight transition-all duration-300 ${formData.role === 'faculty' ? 'bg-primary-500 border-primary-500 text-white shadow-active-primary' : 'bg-white dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50'}`}
                                 >
                                     Faculty
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <input
-                                name="name"
-                                type="text"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                placeholder="Full Name"
-                                value={formData.name}
-                                onChange={handleChange}
-                            />
-                            <input
-                                name="email"
-                                type="email"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                placeholder="Email address"
-                                value={formData.email}
-                                onChange={handleChange}
-                            />
-                            <input
-                                name="password"
-                                type="password"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                placeholder="Password"
-                                value={formData.password}
-                                onChange={handleChange}
-                            />
-                            <input
-                                name="department"
-                                type="text"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                placeholder="Department (e.g. CSE)"
-                                value={formData.department}
-                                onChange={handleChange}
-                            />
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Full Name</label>
+                                <input
+                                    name="name"
+                                    type="text"
+                                    required
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                    placeholder="Enter your name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Email Address</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    required
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                    placeholder="yourname@domain.com"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Secure Password</label>
+                                <input
+                                    name="password"
+                                    type="password"
+                                    required
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                    placeholder="••••••••••••"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Department</label>
+                                <input
+                                    name="department"
+                                    type="text"
+                                    required
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                    placeholder="e.g. CSE, ECE"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                />
+                            </div>
                             {formData.role === 'student' && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input
-                                        name="rollNumber"
-                                        type="text"
-                                        required
-                                        className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                        placeholder="Roll No"
-                                        value={formData.rollNumber}
-                                        onChange={handleChange}
-                                    />
-                                    <input
-                                        name="section"
-                                        type="text"
-                                        required
-                                        className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                        placeholder="Section"
-                                        value={formData.section}
-                                        onChange={handleChange}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Roll Number</label>
+                                        <input
+                                            name="rollNumber"
+                                            type="text"
+                                            required
+                                            className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                            placeholder="Roll No"
+                                            value={formData.rollNumber}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Section</label>
+                                        <input
+                                            name="section"
+                                            type="text"
+                                            required
+                                            className="w-full px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                                            placeholder="Section"
+                                            value={formData.section}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-6">
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            className="w-full h-14 gradient-bg text-white font-black rounded-2xl shadow-active-primary hover:shadow-glow-primary hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center space-x-2 text-lg tracking-tight"
                         >
-                            Create Account
+                            <span>Create Account</span>
                         </button>
                     </div>
                 </form>
-                <div className="text-center mt-4">
-                    <p className="text-sm text-gray-600">
-                        Already have an account? <Link to="/login" className="text-primary font-semibold hover:text-indigo-700 hover:underline">Login</Link>
+                <div className="mt-8 text-center">
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">
+                        Already have an account? <Link to="/login" className="text-primary-500 font-black hover:underline ml-1">Login Here</Link>
                     </p>
                 </div>
             </div>
