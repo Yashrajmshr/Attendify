@@ -1,7 +1,14 @@
 const admin = require('firebase-admin');
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : require('./attendify-1d0ca-firebase-adminsdk-fbsvc-1e4acd84ac.json');
+let serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+    try {
+        serviceAccount = require('./attendify-1d0ca-firebase-adminsdk-fbsvc-1e4acd84ac.json');
+    } catch (e) {
+        console.error("FIREBASE_SERVICE_ACCOUNT environment variable is not set, and local credentials file is missing.");
+    }
+}
 
 try {
     admin.initializeApp({

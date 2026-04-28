@@ -117,7 +117,7 @@ const SubjectManagement = () => {
         }
     }, [filterDept, sectionsData]);
 
-    const fetchDepartments = async () => {
+    async function fetchDepartments() {
         try {
             const { data } = await api.get('/sections');
             setSectionsOnly(data);
@@ -126,9 +126,9 @@ const SubjectManagement = () => {
         } catch (err) {
             console.error('Failed to fetch departments', err);
         }
-    };
+    }
 
-    const fetchSubjects = async () => {
+    async function fetchSubjects() {
         try {
             setLoading(true);
             const { data } = await api.get('/subjects');
@@ -139,7 +139,7 @@ const SubjectManagement = () => {
             setError('Failed to fetch subjects');
             setLoading(false);
         }
-    };
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -199,14 +199,14 @@ const SubjectManagement = () => {
         }
     };
 
-    const fetchFaculty = async () => {
+    async function fetchFaculty() {
         try {
             const { data } = await api.get('/admin/users?role=faculty');
             setFacultyList(data);
         } catch (err) {
             console.error('Failed to fetch faculty', err);
         }
-    };
+    }
 
     const handleEdit = (subject) => {
         setFormData({
