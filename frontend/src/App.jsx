@@ -9,12 +9,22 @@ import AdminDashboard from './pages/AdminDashboard';
 const DashboardRedirect = () => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" />;
-  return user.role === 'faculty' ? <FacultyDashboard /> : <StudentDashboard />;
+  if (user.role === 'admin') return <Navigate to="/admin" />;
+  return user.role === 'faculty' ? <Navigate to="/faculty-dashboard" /> : <Navigate to="/student-dashboard" />;
 };
 
-const PrivateRoute = ({ children }) => {
+const StudentRoute = ({ children }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  if (user.role !== 'student') return <Navigate to="/faculty-dashboard" />;
+  return children;
+};
+
+const FacultyRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  if (user.role !== 'faculty') return <Navigate to="/student-dashboard" />;
+  return children;
 };
 
 const AdminRoute = ({ children }) => {
@@ -40,16 +50,16 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Navigate to="/login" />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<DashboardRedirect />} />
           <Route path="/admin" element={
             <AdminRoute>
               <AdminDashboard />
             </AdminRoute>
           } />
-          <Route path="/" element={<Navigate to="/login" />} />
-          {/* Dynamic dashboard routing based on role is handled in Login or separate component */}
-          <Route path="/student-dashboard" element={<PrivateRoute><StudentDashboard /></PrivateRoute>} />
-          <Route path="/faculty-dashboard" element={<PrivateRoute><FacultyDashboard /></PrivateRoute>} />
+          <Route path="/" element={<DashboardRedirect />} />
+          <Route path="/student-dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+          <Route path="/faculty-dashboard" element={<FacultyRoute><FacultyDashboard /></FacultyRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

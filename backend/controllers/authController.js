@@ -82,19 +82,13 @@ const authUser = async (req, res) => {
             await logActivity(userId, user.role, 'LOGIN', { email: user.email }, req.ip);
 
             const response = {
+                ...user,
                 _id: userId,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                department: user.department,
                 token: generateToken(userId),
             };
-
-            // Add admin-specific fields
-            if (user.role === 'admin') {
-                response.adminType = user.adminType || 'super'; // Default to super for backward compatibility
-                response.assignedDepartment = user.assignedDepartment || null;
-            }
+            
+            // Exclude password
+            delete response.password;
 
             res.json(response);
         } else {
@@ -106,4 +100,8 @@ const authUser = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, authUser };
+const getProfile = async (req, res) => {
+    res.json(req.user);
+};
+
+module.exports = { registerUser, authUser, getProfile };

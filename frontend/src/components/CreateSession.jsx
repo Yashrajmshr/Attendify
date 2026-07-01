@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { MapPin } from 'lucide-react';
+import { MapPin, Settings, ShieldCheck } from 'lucide-react';
 
 const CreateSession = () => {
     const [formData, setFormData] = useState({
         subject: '',
         section: '',
-        radius: '',
-        sessionType: 'Class'
+        radius: '15',
+        sessionType: 'Class',
+        method: 'hybrid', // 'hybrid' | 'qr' | 'gps_qr' | 'face' | 'manual'
+        duration: '15' // minutes
     });
     const [location, setLocation] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -17,7 +19,6 @@ const CreateSession = () => {
     const [availableSections, setAvailableSections] = useState([]);
     const [loadingSubjects, setLoadingSubjects] = useState(true);
 
-    // Fetch faculty's assigned subjects on component mount
     useEffect(() => {
         const fetchMySubjects = async () => {
             try {
@@ -27,7 +28,6 @@ const CreateSession = () => {
                 setMySubjects(subjects);
                 setAvailableSections(data.sections || []);
 
-                // Auto-select the first subject if available
                 if (subjects.length > 0) {
                     const firstSubject = subjects[0];
                     setFormData(prev => ({
@@ -48,6 +48,7 @@ const CreateSession = () => {
 
     const getLocation = () => {
         setLoading(true);
+        setError('');
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -56,12 +57,12 @@ const CreateSession = () => {
                         lng: position.coords.longitude
                     });
                     setLoading(false);
-                    setError('');
                 },
                 (err) => {
-                    setError('Error getting location: ' + err.message);
+                    setError('Error getting location: ' + err.message + '. Please ensure location access is enabled.');
                     setLoading(false);
-                }
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
             );
         } else {
             setError('Geolocation is not supported by this browser.');
@@ -74,37 +75,42 @@ const CreateSession = () => {
         setMessage('');
         setError('');
 
-        if (!location) {
-            setError('Please get your current location first.');
+        const needsGPS = ['hybrid', 'gps_qr'].includes(formData.method);
+        if (needsGPS && !location) {
+            setError('Please get your current GPS location first for this verification method.');
             return;
         }
 
         try {
             await api.post('/session', {
                 ...formData,
-                lat: location.lat,
-                lng: location.lng,
-                radius: Number(formData.radius)
+                lat: location ? location.lat : 0,
+                lng: location ? location.lng : 0,
+                radius: Number(formData.radius),
+                duration: Number(formData.duration)
             });
-            setMessage('Session created successfully! Go to "Active Sessions" to view QR.');
-            // Reset but keep the currently selected subject if multiple exist, otherwise reset to empty if no subjects
+            setMessage('Attendance Session initiated successfully! Navigate to "Analytics Room" -> "Lectures Roster" to view dynamic QR and monitor check-ins.');
+            
             const currentSubjectValue = formData.subject;
             setFormData({
                 subject: currentSubjectValue,
                 section: '',
-                radius: '',
-                sessionType: 'Class'
+                radius: '15',
+                sessionType: 'Class',
+                method: 'hybrid',
+                duration: '15'
             });
             setLocation(null);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create session');
+            setError(err.response?.data?.message || 'Failed to initialize session.');
         }
     };
 
     if (loadingSubjects) {
         return (
-            <div className="p-8 text-center">
-                <p className="text-slate-500 font-medium">Loading your assigned subjects...</p>
+            <div className="p-8 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Syncing Assigned Subjects...</p>
             </div>
         );
     }
@@ -113,9 +119,9 @@ const CreateSession = () => {
         return (
             <div className="p-8">
                 <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/60 rounded-3xl p-8 text-center shadow-sm">
-                    <h3 className="text-xl font-bold text-amber-800 dark:text-amber-400 mb-3">No Subject Assigned</h3>
-                    <p className="text-amber-700 dark:text-amber-500/80 max-w-md mx-auto">
-                        You don't have any subjects assigned yet. Please contact the administrator to assign subjects to your account.
+                    <h3 className="text-xl font-bold text-amber-800 dark:text-amber-400 mb-3">No Subjects Assigned</h3>
+                    <p className="text-amber-700 dark:text-amber-500/80 max-w-md mx-auto text-xs font-semibold">
+                        You do not have any teaching subjects allocated to your account. Please contact the Academic Department administrator.
                     </p>
                 </div>
             </div>
@@ -123,97 +129,159 @@ const CreateSession = () => {
     }
 
     return (
-        <div className="p-6">
-            <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-8">Create Attendance Session</h2>
+        <div className="space-y-8 animate-fade-in max-w-3xl">
+            <div>
+                <h2 className="text-xl font-black text-slate-850 dark:text-white tracking-tight flex items-center">
+                    <Settings className="mr-2 text-primary-500" size={22} />
+                    Attendance Session Architect
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Configure parameters and launch real-time student verification portals</p>
+            </div>
 
-            {message && <div className="bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/40 mb-6 font-medium animate-fade-in">{message}</div>}
-            {error && <div className="bg-rose-50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 p-4 rounded-2xl border border-rose-100 dark:border-rose-800/40 mb-6 font-medium animate-fade-in">{error}</div>}
+            {message && (
+                <div className="bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-455 p-4.5 rounded-2xl border border-emerald-500/20 text-xs font-bold flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>{message}</span>
+                </div>
+            )}
+            {error && (
+                <div className="bg-rose-500/10 dark:bg-rose-500/5 text-rose-600 dark:text-rose-455 p-4.5 rounded-2xl border border-rose-500/20 text-xs font-bold flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span>{error}</span>
+                </div>
+            )}
 
-            <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
-                <div>
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Choice of Subject</label>
-                    <select
-                        className="w-full px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white font-bold text-sm"
-                        value={formData.subject}
-                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        required
-                    >
-                        {mySubjects.map((s, idx) => {
-                            const val = `${s.name} (${s.code})`;
-                            return <option key={s.id || idx} value={val}>{val}</option>
-                        })}
-                    </select>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 ml-1 font-medium">Select one of your assigned subjects</p>
-                </div>
-                <div>
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Target Section</label>
-                    <select
-                        className="w-full px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white font-bold text-sm"
-                        value={formData.section}
-                        onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                        required
-                    >
-                        <option value="">-- Choose Section --</option>
-                        {availableSections.map((section) => (
-                            <option key={section} value={section}>
-                                Section {section}
-                            </option>
-                        ))}
-                    </select>
-                    {availableSections.length === 0 && (
-                        <p className="text-[10px] text-rose-500 mt-2 ml-1 font-bold italic">No sections assigned. Contact administrator.</p>
-                    )}
-                </div>
-                <div>
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Session Type</label>
-                    <select
-                        className="w-full px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white font-bold text-sm"
-                        value={formData.sessionType}
-                        onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
-                        required
-                    >
-                        <option value="Class">Class (1 Attendance)</option>
-                        <option value="Lab">Lab (2 Attendances)</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Allowed Radius (meters)</label>
-                    <input
-                        type="number"
-                        className="w-full px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white font-bold text-sm"
-                        value={formData.radius}
-                        onChange={(e) => setFormData({ ...formData, radius: e.target.value })}
-                        required
-                        placeholder="e.g. 50"
-                        min="25"
-                    />
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 ml-1 font-medium italic">Minimum radius: 25 meters</p>
+            <form onSubmit={handleSubmit} className="premium-card p-6 md:p-8 space-y-6">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-405 dark:text-slate-500 uppercase tracking-widest ml-1">Allocation / Subject</label>
+                        <select
+                            className="glass-select text-xs font-bold"
+                            value={formData.subject}
+                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            required
+                        >
+                            {mySubjects.map((s, idx) => {
+                                const val = `${s.name} (${s.code})`;
+                                return <option key={s.id || idx} value={val} className="dark:bg-slate-900">{val}</option>
+                            })}
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-405 dark:text-slate-500 uppercase tracking-widest ml-1">Target Section</label>
+                        <select
+                            className="glass-select text-xs font-bold"
+                            value={formData.section}
+                            onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                            required
+                        >
+                            <option value="" className="dark:bg-slate-900">— Select Section —</option>
+                            {availableSections.map((section) => (
+                                <option key={section} value={section} className="dark:bg-slate-900">
+                                    Section {section}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
-                    <button
-                        type="button"
-                        onClick={getLocation}
-                        disabled={loading}
-                        className={`flex items-center px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${location ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
-                    >
-                        <MapPin size={16} className="mr-2" />
-                        {loading ? 'Locating...' : location ? 'Location Locked' : 'Fetch My Location'}
-                    </button>
-                    {location && (
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Coordinates Captured</span>
-                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-405 dark:text-slate-500 uppercase tracking-widest ml-1">Workload Session Type</label>
+                        <select
+                            className="glass-select text-xs font-bold"
+                            value={formData.sessionType}
+                            onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
+                            required
+                        >
+                            <option value="Class" className="dark:bg-slate-900">Standard Lecture (1x Credit)</option>
+                            <option value="Lab" className="dark:bg-slate-900">Lab Practical (2x Credit Weight)</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-405 dark:text-slate-500 uppercase tracking-widest ml-1">Portal Expiry Duration (Minutes)</label>
+                        <input
+                            type="number"
+                            className="glass-input text-xs font-bold"
+                            value={formData.duration}
+                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                            required
+                            placeholder="e.g. 15"
+                            min="5"
+                            max="120"
+                        />
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1 ml-1">Auto-expires session after timer runs out</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 col-span-1">
+                        <label className="block text-[10px] font-black text-slate-405 dark:text-slate-500 uppercase tracking-widest ml-1">Geofencing radius limit (Meters)</label>
+                        <input
+                            type="number"
+                            className="glass-input text-xs font-bold"
+                            value={formData.radius}
+                            onChange={(e) => setFormData({ ...formData, radius: e.target.value })}
+                            required
+                            placeholder="e.g. 15"
+                            min="5"
+                            max="500"
+                        />
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1 ml-1">
+                            Allowed check-in radius (meters)
+                        </p>
+                    </div>
+                    <div className="space-y-2 col-span-1 flex flex-col justify-end">
+                        <div className="bg-indigo-500/5 border border-indigo-500/15 p-4.5 rounded-2xl text-[10px] font-bold text-indigo-650 dark:text-indigo-400">
+                            Verification: Hybrid (GPS Lock + Dynamic QR Rotation) active by default.
                         </div>
+                    </div>
+                </div>
+
+                {/* Geolocation visual card */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-100/40 dark:bg-slate-950/20 p-6 rounded-2xl border border-slate-200/40 dark:border-white/5 relative overflow-hidden group transition-all">
+                    <div className="flex items-center space-x-4 relative z-10">
+                        <button
+                            type="button"
+                            onClick={getLocation}
+                            disabled={loading}
+                            className={`flex items-center px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border ${
+                                location 
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/30 scale-[1.02]' 
+                                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-250 dark:border-slate-800 hover:bg-slate-50'
+                            }`}
+                        >
+                            <MapPin size={14} className={`mr-1.5 ${location ? 'animate-bounce text-emerald-500' : ''}`} />
+                            {loading ? 'Acquiring GPS...' : location ? 'Location Verified' : 'Lock GPS Coordinates'}
+                        </button>
+
+                        {location ? (
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">GPS Coordinates Locked</span>
+                                <span className="font-mono text-[10px] font-bold text-slate-500 mt-1">{location.lat.toFixed(6)}°, {location.lng.toFixed(6)}°</span>
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-slate-405 font-bold uppercase">GPS location lock required for geofence verification</p>
+                        )}
+                    </div>
+                    
+                    {location && (
+                        <div className="absolute right-6 top-6 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-60"></div>
                     )}
                 </div>
 
-                <button
-                    type="submit"
-                    className="w-full py-4 gradient-bg text-white font-bold rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary-500/25 flex items-center justify-center uppercase tracking-widest text-xs"
-                >
-                    Initialize Session
-                </button>
+                <div className="pt-4">
+                    <button
+                        type="submit"
+                        className="premium-button gradient-bg w-full py-4 text-xs font-black tracking-widest flex items-center justify-center space-x-2 shadow-active-primary"
+                    >
+                        <ShieldCheck size={16} />
+                        <span>Launch Attendance Portal</span>
+                    </button>
+                </div>
             </form>
         </div>
     );

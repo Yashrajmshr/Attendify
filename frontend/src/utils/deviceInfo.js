@@ -9,7 +9,7 @@ export const getDeviceId = () => {
         // Generate a new UUID if none exists using native browser crypto
         try {
             deviceId = crypto.randomUUID();
-        } catch (e) {
+        } catch {
             // Fallback for older browsers
             deviceId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }

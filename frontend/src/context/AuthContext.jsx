@@ -11,11 +11,27 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
+        const fetchProfile = async () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                setUser(parsed);
+                try {
+                    const { data } = await api.get('/auth/profile');
+                    const updatedUser = { ...parsed, ...data };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    setUser(updatedUser);
+                } catch (err) {
+                    console.error('Failed to refresh user profile from server', err);
+                    if (err.response?.status === 401) {
+                        localStorage.removeItem('user');
+                        setUser(null);
+                    }
+                }
+            }
+            setLoading(false);
+        };
+        fetchProfile();
     }, []);
 
     const login = async (email, password) => {

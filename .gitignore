@@ -24,3 +24,12 @@ Thumbs.db
 
 # Database
 *.sqlite
+
+# Firebase Admin SDK credentials
+backend/config/*.json
+
+# Local visual benchmarks and test scripts
+*.html
+*.png
+test_kroki.py
+backend/create_debug_faculty.js

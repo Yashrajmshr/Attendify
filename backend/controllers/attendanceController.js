@@ -267,24 +267,27 @@ const exportAttendance = async (req, res) => {
         const sessionsSnapshot = await sessionsRef
             .where('facultyId', '==', req.user.id)
             .where('subject', '==', subject)
-            .where('createdAt', '>=', new Date(startDate).toISOString())
-            .where('createdAt', '<=', new Date(endDate + 'T23:59:59').toISOString())
             .get();
 
         const sessionIds = [];
         const sessionDates = [];
         const dateWeights = {};
 
+        const startISO = new Date(startDate).toISOString();
+        const endISO = new Date(endDate + 'T23:59:59').toISOString();
+
         sessionsSnapshot.forEach(doc => {
             const data = doc.data();
-            sessionIds.push(doc.id);
-            // Extract date (YYYY-MM-DD)
-            const date = new Date(data.createdAt).toISOString().split('T')[0];
-            const weight = data.sessionType === 'Lab' ? 2 : 1;
-            
-            sessionDates.push({ id: doc.id, date, weight });
-            if (!dateWeights[date] || weight > dateWeights[date]) {
-                dateWeights[date] = weight;
+            if (data.createdAt >= startISO && data.createdAt <= endISO) {
+                sessionIds.push(doc.id);
+                // Extract date (YYYY-MM-DD)
+                const date = new Date(data.createdAt).toISOString().split('T')[0];
+                const weight = data.sessionType === 'Lab' ? 2 : 1;
+                
+                sessionDates.push({ id: doc.id, date, weight });
+                if (!dateWeights[date] || weight > dateWeights[date]) {
+                    dateWeights[date] = weight;
+                }
             }
         });
 
@@ -453,45 +456,73 @@ const exportSessionAttendance = async (req, res) => {
 
 
 // @desc    Update/Edit Attendance (Manual Override)
-// @route   PUT /api/attendance/:id
+// @route   PUT /api/attendance/update
 // @access  Private/Faculty
 const updateAttendance = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body; // 'P' or 'A'
+    const { sessionId, studentId, status } = req.body; // 'P' or 'A'
+
+    if (!sessionId || !studentId || !status) {
+        return res.status(400).json({ message: 'Please provide sessionId, studentId, and status' });
+    }
 
     try {
-        const attendanceRef = db.collection('attendance').doc(id);
-        const doc = await attendanceRef.get();
+        const attendanceRef = db.collection('attendance');
+        const snapshot = await attendanceRef
+            .where('sessionId', '==', sessionId)
+            .where('studentId', '==', studentId)
+            .get();
 
-        if (!doc.exists) {
-            // Check if we need to create it? (User might want to mark someone present who was absent/no-record)
-            // But usually ID implies existing record. If absent means no record, we might need a different approach.
-            // For now, assume we're editing an existing record.
-            return res.status(404).json({ message: 'Attendance record not found' });
+        if (!snapshot.empty) {
+            // Document exists, update it
+            const doc = snapshot.docs[0];
+            const prevData = doc.data();
+            await doc.ref.update({
+                status,
+                updatedAt: new Date().toISOString(),
+                updatedBy: req.user.id
+            });
+
+            await logActivity(
+                req.user.id,
+                req.user.role,
+                'UPDATE_ATTENDANCE',
+                {
+                    attendanceId: doc.id,
+                    studentId,
+                    oldStatus: prevData.status,
+                    newStatus: status
+                },
+                req.ip
+            );
+        } else {
+            // Create a new record
+            const newRecord = {
+                sessionId,
+                studentId,
+                status,
+                lat: 0,
+                lng: 0,
+                distanceFromFaculty: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                updatedBy: req.user.id
+            };
+            const docRef = await attendanceRef.add(newRecord);
+
+            await logActivity(
+                req.user.id,
+                req.user.role,
+                'CREATE_ATTENDANCE_MANUAL',
+                {
+                    attendanceId: docRef.id,
+                    studentId,
+                    newStatus: status
+                },
+                req.ip
+            );
         }
 
-        const prevData = doc.data();
-        await attendanceRef.update({
-            status,
-            updatedAt: new Date().toISOString(),
-            updatedBy: req.user.id
-        });
-
-        // Log it
-        await logActivity(
-            req.user.id,
-            req.user.role,
-            'UPDATE_ATTENDANCE',
-            {
-                attendanceId: id,
-                studentId: prevData.studentId,
-                oldStatus: prevData.status,
-                newStatus: status
-            },
-            req.ip
-        );
-
-        res.json({ message: 'Attendance updated' });
+        res.json({ message: 'Attendance updated successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error', error: error.message });

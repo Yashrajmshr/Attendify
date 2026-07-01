@@ -688,23 +688,41 @@ const bulkDeleteLogs = async (req, res) => {
 
 // @desc    Get Defaulters List
 // @route   GET /api/admin/defaulters
-// @access  Private/Admin
+// @access  Private/Admin & Faculty
 const getDefaulters = async (req, res) => {
     try {
         const threshold = parseFloat(req.query.threshold) || 75;
         
+        let allowedSections = null;
+        if (req.user.role === 'faculty') {
+            const subjectsSnapshot = await db.collection('subjects').where('facultyId', '==', req.user.id).get();
+            const subjectSections = [];
+            subjectsSnapshot.forEach(doc => {
+                if (doc.data().section) subjectSections.push(doc.data().section);
+            });
+            const facultySections = req.user.sections || (req.user.section ? [req.user.section] : []);
+            allowedSections = [...new Set([...subjectSections, ...facultySections])];
+        }
+
         // Fetch all students
         const studentsSnap = await db.collection('users').where('role', '==', 'student').get();
         const students = [];
-        studentsSnap.forEach(doc => students.push({ id: doc.id, ...doc.data() }));
+        studentsSnap.forEach(doc => {
+            const data = doc.data();
+            if (!allowedSections || allowedSections.includes(data.section)) {
+                students.push({ id: doc.id, ...data });
+            }
+        });
 
         const sessionsSnap = await db.collection('sessions').get();
         const sessions = [];
         const sessionWeights = {};
         sessionsSnap.forEach(doc => {
             const data = doc.data();
-            sessions.push({ id: doc.id, ...data });
-            sessionWeights[doc.id] = data.sessionType === 'Lab' ? 2 : 1;
+            if (!allowedSections || allowedSections.includes(data.section)) {
+                sessions.push({ id: doc.id, ...data });
+                sessionWeights[doc.id] = data.sessionType === 'Lab' ? 2 : 1;
+            }
         });
 
         const attendanceSnap = await db.collection('attendance').get();

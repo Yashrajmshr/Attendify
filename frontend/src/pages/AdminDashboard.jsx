@@ -58,7 +58,6 @@ const AdminDashboard = () => {
     const [semesters, setSemesters] = useState([]);
     const [sectionsOnly, setSectionsOnly] = useState([]);
     const [availableSubjects, setAvailableSubjects] = useState([]);
-    const [availableSections, setAvailableSections] = useState([]);
 
     // Manage Users Filters & State
     const [manageRoleTab, setManageRoleTab] = useState('student');
@@ -257,7 +256,6 @@ const AdminDashboard = () => {
             const { data } = await api.get('/admin/users');
             setUsers(data);
         } catch (err) {
-            console.error('Failed to fetch users', err);
             setError('Failed to fetch users');
         }
     };
@@ -269,7 +267,6 @@ const AdminDashboard = () => {
             setLogs(data);
             setLogsLoading(false);
         } catch (err) {
-            console.error('Failed to fetch logs', err);
             setLogsLoading(false);
         }
     };

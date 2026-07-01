@@ -20,7 +20,7 @@ const {
     getDefaulters,
     notifyDefaulters
 } = require('../controllers/adminController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, adminOnly, authorizeRoles } = require('../middleware/authMiddleware');
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -47,7 +47,7 @@ router.get('/analytics/attendance', protect, adminOnly, getAttendanceAnalytics);
 router.get('/sessions/live', protect, adminOnly, getLiveSessions);
 
 // Defaulters
-router.get('/defaulters', protect, adminOnly, getDefaulters);
-router.post('/notify-defaulters', protect, adminOnly, notifyDefaulters);
+router.get('/defaulters', protect, authorizeRoles('faculty', 'admin'), getDefaulters);
+router.post('/notify-defaulters', protect, authorizeRoles('faculty', 'admin'), notifyDefaulters);
 
 module.exports = router;

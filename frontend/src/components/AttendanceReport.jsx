@@ -139,89 +139,91 @@ const AttendanceReport = () => {
     const years = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i);
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 animate-fade-in">
             {/* Header */}
-            <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/10">
                     <Download size={20} className="text-white" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">Attendance Export</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Download full section attendance as Excel/CSV</p>
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Academic Reports</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Export student registries and attendance logs to Excel datasets</p>
                 </div>
             </div>
 
-            {/* Filter Card */}
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-5">
+            {/* Filter board */}
+            <div className="bg-slate-105/40 dark:bg-slate-950/20 rounded-[2rem] border border-slate-200/40 dark:border-white/5 p-6 md:p-8 space-y-6">
 
-                {/* Row 1: Subject + Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Grid: Subject & Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Subject */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-                            <BookOpen size={13} /> Subject
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                            <BookOpen size={13} /> Choice of Subject
                         </label>
                         <div className="relative">
                             <select
                                 value={selectedSubject}
                                 onChange={e => setSelectedSubject(e.target.value)}
-                                className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-slate-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+                                className="glass-select text-xs font-bold"
                             >
-                                <option value="">— Select Subject —</option>
+                                <option value="" className="dark:bg-slate-900">— Select Subject —</option>
                                 {mySubjects.map((s, i) => {
                                     const subjectValue = s.name && s.code ? `${s.name} (${s.code})` : (s.name || s.subject || s);
                                     return (
-                                        <option key={s.id || s._id || i} value={subjectValue}>
+                                        <option key={s.id || s._id || i} value={subjectValue} className="dark:bg-slate-900">
                                             {subjectValue}
                                         </option>
                                     );
                                 })}
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                            <span className="absolute right-4 top-4.5 text-slate-450 pointer-events-none">▼</span>
                         </div>
                     </div>
 
                     {/* Section */}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide flex items-center gap-1">
-                            <Users size={13} /> Section
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                            <Users size={13} /> Target Section
                         </label>
                         <div className="relative">
                             <select
                                 value={selectedSection}
                                 onChange={e => setSelectedSection(e.target.value)}
-                                className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-slate-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+                                className="glass-select text-xs font-bold"
                             >
-                                <option value="">— Select Section —</option>
+                                <option value="" className="dark:bg-slate-900">— Select Section —</option>
                                 {sections.map((s, i) => (
-                                    <option key={i} value={s}>
+                                    <option key={i} value={s} className="dark:bg-slate-900">
                                         Section {s}
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                            <span className="absolute right-4 top-4.5 text-slate-455 pointer-events-none">▼</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Row 2: Date Mode Tabs */}
-                <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide flex items-center gap-1">
-                        <Calendar size={13} /> Date Range
+                {/* Range mode tab */}
+                <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                        <Calendar size={13} /> Timeframe Range
                     </label>
-                    <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-fit">
+                    
+                    <div className="flex p-1 rounded-2xl bg-slate-100/60 dark:bg-slate-950/40 border border-slate-200/40 dark:border-white/5 w-fit">
                         {[
                             { key: 'semester', label: 'Full Semester' },
-                            { key: 'month', label: 'Month' },
-                            { key: 'custom', label: 'Custom' },
+                            { key: 'month', label: 'By Month' },
+                            { key: 'custom', label: 'Custom Window' },
                         ].map(opt => (
                             <button
                                 key={opt.key}
                                 onClick={() => setDateMode(opt.key)}
-                                className={`px-4 py-2 text-sm font-medium transition-all ${dateMode === opt.key
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'text-slate-600 hover:bg-slate-50'
-                                    }`}
+                                className={`px-4.5 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${
+                                    dateMode === opt.key
+                                        ? 'bg-white dark:bg-slate-900 text-indigo-650 dark:text-indigo-400 shadow-sm'
+                                        : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-250'
+                                }`}
                             >
                                 {opt.label}
                             </button>
@@ -229,154 +231,154 @@ const AttendanceReport = () => {
                     </div>
                 </div>
 
-                {/* Date Inputs based on mode */}
+                {/* Date Fields according to mode */}
                 {dateMode === 'semester' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Semester Start</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Semester Start</label>
                             <input
                                 type="date"
                                 value={semesterStart}
                                 onChange={e => setSemesterStart(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                className="glass-input text-xs"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Semester End</label>
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Semester End</label>
                             <input
                                 type="date"
                                 value={semesterEnd}
                                 onChange={e => setSemesterEnd(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                className="glass-input text-xs"
                             />
                         </div>
                     </div>
                 )}
 
                 {dateMode === 'month' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Month</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Month</label>
                             <div className="relative">
                                 <select
                                     value={selectedMonth}
                                     onChange={e => setSelectedMonth(Number(e.target.value))}
-                                    className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                    className="glass-select text-xs font-bold"
                                 >
                                     {MONTHS.map((m, i) => (
-                                        <option key={i} value={i}>{m}</option>
+                                        <option key={i} value={i} className="dark:bg-slate-900">{m}</option>
                                     ))}
                                 </select>
-                                <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                                <span className="absolute right-4 top-4.5 text-slate-450 pointer-events-none">▼</span>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Year</label>
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Year</label>
                             <div className="relative">
                                 <select
                                     value={selectedYear}
                                     onChange={e => setSelectedYear(Number(e.target.value))}
-                                    className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                    className="glass-select text-xs font-bold"
                                 >
                                     {years.map(y => (
-                                        <option key={y} value={y}>{y}</option>
+                                        <option key={y} value={y} className="dark:bg-slate-900">{y}</option>
                                     ))}
                                 </select>
-                                <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                                <span className="absolute right-4 top-4.5 text-slate-450 pointer-events-none">▼</span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {dateMode === 'custom' && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">From Date</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">From Date</label>
                             <input
                                 type="date"
                                 value={customStart}
                                 onChange={e => setCustomStart(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                className="glass-input text-xs"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">To Date</label>
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">To Date</label>
                             <input
                                 type="date"
                                 value={customEnd}
                                 min={customStart}
                                 onChange={e => setCustomEnd(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                className="glass-input text-xs"
                             />
                         </div>
                     </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-1">
+                {/* Action Controls */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
                     <button
                         onClick={handlePreview}
                         disabled={!isValid() || loadingPreview}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                        className="w-full sm:w-auto px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-sm"
                     >
-                        <Filter size={16} />
-                        {loadingPreview ? 'Checking...' : 'Preview'}
+                        <Filter size={14} />
+                        {loadingPreview ? 'Fetching stats...' : 'Preview Records'}
                     </button>
 
                     <button
                         onClick={handleDownload}
                         disabled={!isValid() || downloading}
-                        className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-md
-                            disabled:opacity-40 disabled:cursor-not-allowed
-                            bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 hover:shadow-lg"
+                        className="w-full sm:flex-1 px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-40 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg shadow-emerald-500/10"
                     >
-                        <Download size={16} />
-                        {downloading ? 'Downloading...' : 'Download Excel'}
+                        <Download size={14} />
+                        {downloading ? 'Compiling Excel...' : 'Export Spreadsheet'}
                     </button>
                 </div>
             </div>
 
-            {/* Error */}
+            {/* Error Feedback */}
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                <div className="bg-rose-500/10 dark:bg-rose-500/5 text-rose-600 dark:text-rose-450 p-4.5 rounded-2xl border border-rose-500/20 text-xs font-bold">
                     {error}
                 </div>
             )}
 
-            {/* Preview Info */}
+            {/* Preview Widget Stats */}
             {preview && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex items-center gap-4">
-                    <Clock size={20} className="text-indigo-500 flex-shrink-0" />
+                <div className="bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 rounded-[1.75rem] p-5 flex items-start gap-4 animate-fade-in">
+                    <Clock size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
                     <div>
-                        <p className="text-sm font-semibold text-indigo-800">
-                            {preview.sessionCount} session{preview.sessionCount !== 1 ? 's' : ''} found
+                        <p className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">
+                            {preview.sessionCount} Active Session{preview.sessionCount !== 1 ? 's' : ''} Identified
                         </p>
-                        <p className="text-xs text-indigo-600 mt-0.5">
-                            From <strong>{preview.startDate}</strong> to <strong>{preview.endDate}</strong> for{' '}
-                            <strong>{selectedSubject}</strong> — Section <strong>{selectedSection}</strong>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            Timeline window: <strong>{preview.startDate}</strong> to <strong>{preview.endDate}</strong> for{' '}
+                            <strong>{selectedSubject}</strong> (Section <strong>{selectedSection}</strong>).
                         </p>
                         {preview.sessionCount === 0 && (
-                            <p className="text-xs text-amber-600 mt-1">⚠ No sessions in this range. The downloaded file will have no date columns.</p>
+                            <p className="text-[10px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider mt-2">
+                                ⚠️ Caution: No sessions found in this window. Syncing will download empty columns.
+                            </p>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Guide */}
-            <div className="bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-5">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">📋 How the export works</h3>
-                <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
-                    <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold mt-0.5">1.</span>
-                        Each row = one student from the selected section
+            {/* Instruction Panel */}
+            <div className="premium-card p-6">
+                <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest mb-4">Export Guidelines</h3>
+                <ul className="space-y-3 text-xs text-slate-500 dark:text-slate-450 font-medium">
+                    <li className="flex items-center gap-2.5">
+                        <span className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center font-bold text-[10px]">1</span>
+                        <span>Exported sheets include student details matching the selected section.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold mt-0.5">2.</span>
-                        Each column after name/roll = one class date (P = Present, A = Absent)
+                    <li className="flex items-center gap-2.5">
+                        <span className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center font-bold text-[10px]">2</span>
+                        <span>Lectures are dynamically populated on date columns with Present (P) or Absent (A) metrics.</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold mt-0.5">3.</span>
-                        Last two columns = Total Present count &amp; Attendance %
+                    <li className="flex items-center gap-2.5">
+                        <span className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 flex items-center justify-center font-bold text-[10px]">3</span>
+                        <span>Aggregate presence count and percentage index are calculated dynamically in final rows.</span>
                     </li>
                 </ul>
             </div>

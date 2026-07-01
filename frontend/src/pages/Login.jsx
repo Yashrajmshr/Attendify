@@ -1,18 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, ShieldAlert, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [selectedRole, setSelectedRole] = useState('student');
+    const [email, setEmail] = useState('test_student@gmail.com');
+    const [password, setPassword] = useState('1234');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, user } = useAuth();
     const navigate = useNavigate();
+
+    // Redirection if already authenticated
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'admin') {
+                navigate('/admin');
+            } else if (user.role === 'faculty') {
+                navigate('/faculty-dashboard');
+            } else {
+                navigate('/student-dashboard');
+            }
+        }
+    }, [user, navigate]);
+
+    // Autofill demo accounts depending on active tab for developer convenience
+    const handleRoleSwitch = (role) => {
+        setSelectedRole(role);
+        setError('');
+        if (role === 'student') {
+            setEmail('test_student@gmail.com');
+            setPassword('1234');
+        } else if (role === 'faculty') {
+            setEmail('test_faculty@gmail.com');
+            setPassword('1234');
+        } else if (role === 'admin') {
+            setEmail('admin@gmail.com');
+            setPassword('1234');
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         const result = await login(email, password);
         if (result.success) {
             if (result.user.role === 'admin') {
@@ -27,80 +57,210 @@ const Login = () => {
         }
     };
 
+    // Parallax background movement effect
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.005;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.005;
+            const img = document.querySelector('.branding-image');
+            if (img) {
+                img.style.transform = `scale(1.1) translate(${moveX}px, ${moveY}px)`;
+                img.style.transition = 'transform 0.2s ease-out';
+            }
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark p-4 relative overflow-hidden">
-            {/* Background Decorative Elements */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-500/5 rounded-full blur-[120px] -mr-64 -mt-64 animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -ml-64 -mb-64 animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-            <div className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl p-10 rounded-[2.5rem] shadow-premium-card w-full max-w-md border border-white/40 dark:border-white/5 relative z-10 animate-fade-in">
-                <div className="flex flex-col items-center mb-10">
-                    <div className="w-16 h-16 gradient-bg rounded-3xl flex items-center justify-center text-white shadow-active-primary mb-6 group hover:scale-110 transition-transform duration-500">
-                        <Lock size={32} strokeWidth={2.5} />
+        <div className="bg-background text-on-background min-h-screen selection:bg-primary-design/30 flex font-sans">
+            <main className="flex min-h-screen w-full overflow-hidden">
+                {/* Left Side: Abstract Geometric Branding */}
+                <section className="hidden lg:flex lg:w-1/2 relative bg-[#090b0c] items-center justify-center p-12 overflow-hidden border-r border-slate-800">
+                    {/* Background Decorative Mesh & Organic Blurs */}
+                    <div className="absolute inset-0 z-0">
+                        {/* Glow spots */}
+                        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
+                        
+                        {/* Grid Overlay */}
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
                     </div>
-                    <h2 className="text-4xl font-display font-black tracking-tight text-slate-900 dark:text-white mb-2">Welcome Back</h2>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium tracking-wide italic">Secure Portal Access</p>
-                </div>
 
-                {error && (
-                    <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl mb-8 flex items-center text-sm font-semibold animate-fade-in">
-                        <ShieldAlert size={18} className="mr-2 shrink-0" />
-                        {error}
-                    </div>
-                )}
+                    {/* Branding Content */}
+                    <div className="relative z-10 max-w-md w-full space-y-8">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-gradient-to-tr from-primary-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+                                <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>dataset</span>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black tracking-tight text-white uppercase leading-none">Attendify</h1>
+                                <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mt-1">Enterprise Platform</p>
+                            </div>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Email Address</label>
-                        <input
-                            type="email"
-                            className="w-full px-5 py-4 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="username@domain.com"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest ml-1">Secure Password</label>
-                        <div className="relative group">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                className="w-full px-5 py-4 rounded-2xl bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none pr-14 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="••••••••••••"
-                            />
-                            <button
-                                type="button"
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-500 focus:outline-none transition-colors p-1"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? (
-                                    <EyeOff size={22} />
-                                ) : (
-                                    <Eye size={22} />
-                                )}
-                            </button>
+                        <div className="space-y-4">
+                            <h2 className="text-3xl font-black text-white tracking-tight leading-tight">
+                                Next-gen enterprise presence tracking.
+                            </h2>
+                            <p className="text-sm text-slate-400 leading-relaxed font-medium">
+                                A unified intelligence layer for institutional attendance, session auditing, and real-time engagement analytics. Built for scale. Engineered for precision.
+                            </p>
+                        </div>
+
+                        {/* Live Shimmer Stats */}
+                        <div className="grid grid-cols-2 gap-4 pt-4">
+                            <div className="premium-card p-5 bg-white/5 dark:bg-slate-900/10 border border-slate-800/40 rounded-2xl relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
+                                <div className="flex items-center space-x-1.5 mb-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-450">System Core</p>
+                                </div>
+                                <p className="text-sm font-black text-white">Node Active</p>
+                            </div>
+                            <div className="premium-card p-5 bg-white/5 dark:bg-slate-900/10 border border-slate-800/40 rounded-2xl relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] animate-shimmer"></div>
+                                <div className="flex items-center space-x-1.5 mb-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-450">Encryption Feed</p>
+                                </div>
+                                <p className="text-sm font-black text-white">AES-256 TLS</p>
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    <div className="pt-2">
-                        <button
-                            type="submit"
-                            className="w-full h-14 gradient-bg text-white font-black rounded-2xl shadow-active-primary hover:shadow-glow-primary hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center space-x-2 text-lg tracking-tight"
-                        >
-                            <span>Authenticate Account</span>
-                            <ArrowRight size={20} strokeWidth={3} />
-                        </button>
+                {/* Right Side: Authentication Card */}
+                <section className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12 bg-[#0a0d0e]">
+                    <div className="w-full max-w-[400px] space-y-8">
+                        {/* Mobile Branding (Hidden on Desktop) */}
+                        <div className="lg:hidden flex flex-col items-center mb-6">
+                            <div className="w-11 h-11 bg-gradient-to-tr from-primary-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg mb-3">
+                                <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>dataset</span>
+                            </div>
+                            <h1 className="text-2xl font-black tracking-tight text-white uppercase">Attendify</h1>
+                            <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mt-1">Enterprise Platform</p>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <h2 className="text-xl font-black text-white tracking-tight uppercase">Enterprise Portal</h2>
+                            <p className="text-xs text-slate-400 font-semibold">Verify your identity to access the management suite.</p>
+                        </div>
+
+                        {/* Tabbed Portal Switcher */}
+                        <div className="flex p-1 bg-slate-900/60 rounded-2xl border border-slate-800">
+                            {['student', 'faculty', 'admin'].map((role) => (
+                                <button 
+                                    key={role}
+                                    type="button"
+                                    className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                        selectedRole === role
+                                            ? 'bg-gradient-to-r from-primary-500/10 to-indigo-500/10 border border-primary-500/20 text-white font-extrabold shadow-sm'
+                                            : 'border border-transparent text-slate-450 hover:text-slate-200'
+                                    }`} 
+                                    onClick={() => handleRoleSwitch(role)}
+                                >
+                                    {role}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Error message */}
+                        {error && (
+                            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-4 rounded-2xl flex items-center gap-3 animate-fade-in text-xs font-bold">
+                                <span className="material-symbols-outlined text-[18px] text-rose-500">gpp_maybe</span>
+                                <p>{error}</p>
+                            </div>
+                        )}
+
+                        <form className="space-y-6" onSubmit={handleSubmit}>
+                            <div className="space-y-5">
+                                {/* Email Input */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 block ml-1" htmlFor="email">Institutional Email</label>
+                                    <div className="relative flex items-center border border-slate-800 rounded-2xl bg-slate-900/20 transition-all focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/10">
+                                        <span className="material-symbols-outlined absolute left-4 text-slate-500 pointer-events-none text-[18px]">alternate_email</span>
+                                        <input 
+                                            className="w-full bg-transparent border-none text-sm text-slate-200 pl-12 pr-4 py-3.5 focus:ring-0 focus:outline-none placeholder:text-slate-600 font-medium" 
+                                            id="email" 
+                                            placeholder={
+                                                selectedRole === 'student' 
+                                                    ? 'student@university.edu' 
+                                                    : selectedRole === 'faculty' 
+                                                    ? 'faculty@university.edu' 
+                                                    : 'admin@university.edu'
+                                            } 
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {/* Password Input */}
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-455" htmlFor="password">Password</label>
+                                        <button className="text-[9px] font-black uppercase tracking-wider text-primary-500 hover:text-primary-400" type="button">Forgot Password</button>
+                                    </div>
+                                    <div className="relative flex items-center border border-slate-800 rounded-2xl bg-slate-900/20 transition-all focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/10">
+                                        <span className="material-symbols-outlined absolute left-4 text-slate-500 pointer-events-none text-[18px]">lock</span>
+                                        <input 
+                                            className="w-full bg-transparent border-none text-sm text-slate-200 pl-12 pr-12 py-3.5 focus:ring-0 focus:outline-none placeholder:text-slate-655 font-medium tracking-widest" 
+                                            id="password" 
+                                            placeholder="••••••••" 
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
+                                        <button 
+                                            className="absolute right-4 text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center p-1" 
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CTA Button */}
+                            <button 
+                                className="w-full bg-gradient-to-r from-primary-500 to-indigo-600 hover:from-primary-600 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider py-4 rounded-2xl shadow-lg shadow-primary-500/10 hover:shadow-xl hover:shadow-primary-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                                type="submit"
+                            >
+                                Authenticate Account
+                            </button>
+                        </form>
+
+                        {/* Security Badges */}
+                        <div className="pt-6 border-t border-slate-800 space-y-4">
+                            <div className="flex items-center gap-2 text-slate-400">
+                                <span className="material-symbols-outlined text-[16px] text-emerald-500">verified_user</span>
+                                <p className="text-[10px] font-bold uppercase tracking-wider">Active session protection enabled.</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2.5">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/40 border border-slate-800 rounded-xl">
+                                    <span className="material-symbols-outlined text-[12px] text-primary-500" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
+                                    <span className="font-mono text-[9px] font-bold text-slate-400 uppercase tracking-widest">SSO COMPLIANT</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/40 border border-slate-800 rounded-xl">
+                                    <span className="material-symbols-outlined text-[12px] text-primary-500" style={{ fontVariationSettings: "'FILL' 1" }}>gpp_good</span>
+                                    <span className="font-mono text-[9px] font-bold text-slate-400 uppercase tracking-widest">SOC2 TYPE II</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <footer className="text-center pt-2">
+                            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                                © 2024 Attendify Enterprise. All rights reserved.
+                            </p>
+                        </footer>
                     </div>
-                </form>
-
-                <div className="mt-12 text-center">
-                    <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Institutional Access Only</p>
-                </div>
-            </div>
+                </section>
+            </main>
         </div>
     );
 };
