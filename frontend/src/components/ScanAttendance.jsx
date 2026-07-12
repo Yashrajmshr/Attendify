@@ -16,61 +16,106 @@ const ScanAttendance = () => {
     const scannerRef = useRef(null);
 
     useEffect(() => {
-        return () => {
-            if (scannerRef.current) {
-                scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
-            }
-        };
-    }, []);
+        let scannerInstance = null;
 
-    const startScanning = async () => {
+        if (isScanning) {
+            const initScanner = async () => {
+                try {
+                    const devices = await Html5Qrcode.getCameras();
+                    if (devices && devices.length) {
+                        const html5QrCode = new Html5Qrcode("reader");
+                        scannerInstance = html5QrCode;
+                        scannerRef.current = html5QrCode;
+
+                        await html5QrCode.start(
+                            { facingMode: "environment" },
+                            { 
+                                fps: 10, 
+                                qrbox: (width, height) => {
+                                    const min = Math.min(width, height);
+                                    const size = Math.floor(min * 0.7);
+                                    return { width: size, height: size };
+                                }
+                            },
+                            (decodedText) => handleScanSuccess(decodedText),
+                            (errorMessage) => { /* ignore */ }
+                        );
+                    } else {
+                        setError("No cameras found on this device.");
+                        setIsScanning(false);
+                    }
+                } catch (err) {
+                    console.error("Camera Error:", err);
+                    setIsScanning(false);
+                    if (!window.isSecureContext) {
+                        setError("Camera blocked! Browsers block camera access on non-secure connections (HTTP). Please access using localhost or configure HTTPS.");
+                    } else {
+                        setError(`Camera Error: ${err?.message || err}`);
+                    }
+                }
+            };
+
+            // Short timeout ensures that React has processed the layout change before we run camera setup
+            const timer = setTimeout(() => {
+                initScanner();
+            }, 50);
+
+            return () => {
+                clearTimeout(timer);
+                if (scannerInstance) {
+                    scannerInstance.stop()
+                        .then(() => {
+                            scannerInstance.clear();
+                        })
+                        .catch(err => console.error("Failed to stop scanner during cleanup", err));
+                }
+            };
+        }
+    }, [isScanning]);
+
+    const startScanning = () => {
         setError('');
         setMessage('');
         setIsScanning(true);
-
-        try {
-            const devices = await Html5Qrcode.getCameras();
-            if (devices && devices.length) {
-                const html5QrCode = new Html5Qrcode("reader");
-                scannerRef.current = html5QrCode;
-
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText) => handleScanSuccess(decodedText),
-                    (errorMessage) => { /* ignore */ }
-                );
-            } else {
-                setError("No cameras found on this device.");
-                setIsScanning(false);
-            }
-        } catch (err) {
-            console.error("Camera Error:", err);
-            setIsScanning(false);
-            setError(`Camera Error: ${err?.message || err}`);
-        }
     };
 
-    const stopScanning = async () => {
-        if (scannerRef.current) {
-            try {
-                await scannerRef.current.stop();
-                scannerRef.current.clear();
-                setIsScanning(false);
-            } catch (err) {
-                console.error("Failed to stop scanner", err);
-            }
-        }
+    const stopScanning = () => {
+        setIsScanning(false);
     };
 
     const handleScanSuccess = (decodedText) => {
         try {
-            const parsed = JSON.parse(decodedText);
-            setScanResult(parsed);
-            stopScanning();
+            console.log("Scanned QR Text:", decodedText);
+            let parsed = null;
+            if (decodedText.trim().startsWith('{')) {
+                parsed = JSON.parse(decodedText);
+            } else {
+                // Support query params/URL formats if applicable
+                try {
+                    const url = new URL(decodedText);
+                    const sessionId = url.searchParams.get('sessionId') || url.pathname.split('/').pop();
+                    const subject = url.searchParams.get('subject') || 'Class Session';
+                    const radius = parseInt(url.searchParams.get('radius')) || 15;
+                    const timestamp = parseInt(url.searchParams.get('timestamp')) || Date.now();
+                    
+                    if (sessionId && sessionId.length > 5) {
+                        parsed = { sessionId, subject, radius, timestamp };
+                    }
+                } catch (_) {
+                    // Not a URL
+                }
+            }
+
+            if (parsed && parsed.sessionId) {
+                setScanResult(parsed);
+                setIsScanning(false);
+                setError('');
+            } else {
+                throw new Error("Invalid QR data structure or missing sessionId");
+            }
         } catch (e) {
-            console.error("Invalid QR format");
-            setError("Invalid QR Code detected.");
+            console.error("Invalid QR format:", e);
+            setError(`Invalid QR Code detected. Scanned content: "${decodedText.substring(0, 100)}"`);
         }
     };
 
@@ -112,7 +157,8 @@ const ScanAttendance = () => {
             setMessage('Attendance Marked Successfully! 🎉');
             setError('');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to mark attendance');
+            console.error("Mark Attendance Error:", err);
+            setError(err.response?.data?.message || err.message || 'Failed to mark attendance');
             setMessage('');
         } finally {
             setLoading(false);
@@ -166,59 +212,66 @@ const ScanAttendance = () => {
                 onClick={!isScanning && !scanResult ? startScanning : undefined}
                 className={`relative aspect-video bg-slate-950 flex items-center justify-center overflow-hidden cursor-pointer group ${isScanning ? 'pointer-events-none' : ''}`}
             >
-                {isScanning ? (
-                    <div className="relative w-full h-full">
-                        <div id="reader" className="w-full h-full"></div>
-                        <div className="absolute inset-0 pointer-events-none border border-primary-500/30 flex items-center justify-center">
-                            <div className="w-40 h-40 border-2 border-primary-500/40 rounded-xl relative">
-                                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-500"></div>
-                                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary-500"></div>
-                                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary-500"></div>
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary-500"></div>
-                                <div className="laser-line absolute left-0 w-full h-0.5 bg-primary-500 shadow-[0_0_10px_rgba(195,192,255,0.8)] z-20"></div>
-                            </div>
+                {/* Always keep the reader container in the DOM to prevent race conditions or library crashes, using opacity and z-index to manage visibility */}
+                <div 
+                    id="reader" 
+                    className={`w-full h-full animate-fade-in ${isScanning ? 'opacity-100 z-10' : 'opacity-0 -z-10 pointer-events-none absolute'}`}
+                ></div>
+
+                {isScanning && (
+                    <div className="absolute inset-0 pointer-events-none border border-primary-500/30 flex items-center justify-center">
+                        <div className="w-40 h-40 border-2 border-primary-500/40 rounded-xl relative">
+                            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-500"></div>
+                            <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary-500"></div>
+                            <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary-500"></div>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary-500"></div>
+                            <div className="laser-line absolute left-0 w-full h-0.5 bg-primary-500 shadow-[0_0_10px_rgba(195,192,255,0.8)] z-20"></div>
                         </div>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 stopScanning();
                             }}
-                            className="absolute bottom-3 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-slate-900/80 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-wider border border-white/10 shadow-md transition-all active:scale-95"
+                            className="absolute bottom-3 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-slate-900/80 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-wider border border-white/10 shadow-md transition-all active:scale-95 pointer-events-auto"
                         >
                             Stop Camera
                         </button>
                     </div>
-                ) : scanResult ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/60 p-6 text-center space-y-2.5">
-                        <CheckCircle size={36} className="text-emerald-500 animate-scale-up" />
-                        <div>
-                            <h4 className="text-sm font-black text-white">{scanResult.subject || 'Session QR Verified'}</h4>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                                Radius Limit: {scanResult.radius}m • Verified Signature
-                            </p>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Camera size={28} className="text-primary-500 mb-1.5" />
-                            <p className="text-[10px] font-black text-white uppercase tracking-wider">Grant Permissions & Start</p>
-                            <p className="text-[9px] text-slate-400 mt-1 max-w-[200px]">Click to launch camera for QR validation.</p>
-                        </div>
-                        
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-36 h-36 border-2 border-primary-500/20 rounded-xl flex items-center justify-center relative">
-                                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-500/60"></div>
-                                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary-500/60"></div>
-                                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary-500/60"></div>
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary-500/60"></div>
-                                <Camera size={24} className="text-primary-500/40" />
+                )}
+
+                {!isScanning && (
+                    scanResult ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/60 p-6 text-center space-y-2.5">
+                            <CheckCircle size={36} className="text-emerald-500 animate-scale-up" />
+                            <div>
+                                <h4 className="text-sm font-black text-white">{scanResult.subject || 'Session QR Verified'}</h4>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                    Radius Limit: {scanResult.radius}m • Verified Signature
+                                </p>
                             </div>
                         </div>
+                    ) : (
+                        <>
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera size={28} className="text-primary-500 mb-1.5" />
+                                <p className="text-[10px] font-black text-white uppercase tracking-wider">Grant Permissions & Start</p>
+                                <p className="text-[9px] text-slate-400 mt-1 max-w-[200px]">Click to launch camera for QR validation.</p>
+                            </div>
+                            
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-36 h-36 border-2 border-primary-500/20 rounded-xl flex items-center justify-center relative">
+                                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-500/60"></div>
+                                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary-500/60"></div>
+                                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary-500/60"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary-500/60"></div>
+                                    <Camera size={24} className="text-primary-500/40" />
+                                </div>
+                            </div>
 
-                        {/* Background abstract texture */}
-                        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
-                    </>
+                            {/* Background abstract texture */}
+                            <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
+                        </>
+                    )
                 )}
             </div>
 
